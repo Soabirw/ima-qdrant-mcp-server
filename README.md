@@ -11,8 +11,8 @@ Built as the semantic memory backend for [ima-claude](https://github.com/Soabirw
 | Category | Grade | Notes |
 |----------|-------|-------|
 | Code Standards | 🟢 B | Clean FP separation; minor impurities in config |
-| Security | 🟡 B | No limit cap on search; collection name unsanitized |
-| Test Coverage | 🟢 B | 56 pytest tests, async mocks, no network calls |
+| Security | 🟢 A | Collection name sanitized; configurable search limit cap |
+| Test Coverage | 🟢 B | 72 pytest tests, async mocks, no network calls |
 | Documentation | 🟢 B | Good setup/config docs; missing API signatures |
 | Maintainability | 🟢 A | 230 lines, clean module boundaries, minimal deps |
 
