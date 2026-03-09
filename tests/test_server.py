@@ -229,3 +229,35 @@ async def test_qdrant_find_uses_explicit_collection():
     assert "No results found in 'other-col'" or search_mock.call_args.args[1] == "other-col"
     # Verify through the search call args
     assert search_mock.call_args.args[1] == "other-col"
+
+
+async def test_qdrant_find_clamps_limit_to_max_search_limit():
+    config_with_low_max = QdrantConfig(
+        collection="test-collection",
+        qdrant_url="http://localhost:6333",
+        ollama_url="http://localhost:11434",
+        embedding_model="nomic-embed-text",
+        vector_size=4,
+        max_search_limit=20,
+    )
+    search_mock = AsyncMock(return_value=[])
+    with (
+        patch("qdrant_mcp.server.load_config", return_value=config_with_low_max),
+        patch("qdrant_mcp.server.embed_texts", new=AsyncMock(return_value=[SAMPLE_VECTOR])),
+        patch("qdrant_mcp.server.search_points", new=search_mock),
+    ):
+        await qdrant_find("query", limit=500)
+
+    assert search_mock.call_args.kwargs.get("limit") == 20
+
+
+async def test_qdrant_find_does_not_clamp_limit_below_max():
+    search_mock = AsyncMock(return_value=[])
+    with (
+        patch("qdrant_mcp.server.load_config", return_value=SAMPLE_CONFIG),
+        patch("qdrant_mcp.server.embed_texts", new=AsyncMock(return_value=[SAMPLE_VECTOR])),
+        patch("qdrant_mcp.server.search_points", new=search_mock),
+    ):
+        await qdrant_find("query", limit=5)
+
+    assert search_mock.call_args.kwargs.get("limit") == 5

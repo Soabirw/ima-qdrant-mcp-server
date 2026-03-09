@@ -11,7 +11,7 @@ def test_load_config_returns_frozen_dataclass():
 
 
 def test_load_config_defaults(monkeypatch):
-    for key in ("QDRANT_URL", "COLLECTION_NAME", "OLLAMA_URL", "EMBEDDING_MODEL", "VECTOR_SIZE"):
+    for key in ("QDRANT_URL", "COLLECTION_NAME", "OLLAMA_URL", "EMBEDDING_MODEL", "VECTOR_SIZE", "MAX_SEARCH_LIMIT"):
         monkeypatch.delenv(key, raising=False)
 
     config = load_config()
@@ -21,6 +21,7 @@ def test_load_config_defaults(monkeypatch):
     assert config.ollama_url == "http://localhost:11434"
     assert config.embedding_model == "nomic-embed-text"
     assert config.vector_size == 768
+    assert config.max_search_limit == 100
 
 
 def test_load_config_is_immutable(monkeypatch):
@@ -38,6 +39,7 @@ def test_load_config_is_immutable(monkeypatch):
         ("OLLAMA_URL", "http://gpu-box:11434", "ollama_url", "http://gpu-box:11434"),
         ("EMBEDDING_MODEL", "mxbai-embed-large", "embedding_model", "mxbai-embed-large"),
         ("VECTOR_SIZE", "1024", "vector_size", 1024),
+        ("MAX_SEARCH_LIMIT", "50", "max_search_limit", 50),
     ],
 )
 def test_load_config_env_overrides(monkeypatch, env_key, env_value, attr, expected):

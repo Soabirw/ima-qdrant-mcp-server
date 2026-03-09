@@ -60,11 +60,12 @@ async def qdrant_find(
     """
     config = load_config()
     collection = _resolve_collection(collection_name, config)
+    clamped_limit = min(limit, config.max_search_limit)
 
     vectors = await embed_texts([query], model=config.embedding_model, ollama_url=config.ollama_url)
     vector = vectors[0]
 
-    results = await search_points(config.qdrant_url, collection, vector, limit=limit)
+    results = await search_points(config.qdrant_url, collection, vector, limit=clamped_limit)
 
     if not results:
         return f"No results found in '{collection}'."

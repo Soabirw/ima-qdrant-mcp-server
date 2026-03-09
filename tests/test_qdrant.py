@@ -7,6 +7,7 @@ from pytest_httpx import HTTPXMock
 from qdrant_mcp.qdrant import (
     delete_collection,
     ensure_collection,
+    sanitize_collection_name,
     scroll_all,
     search_points,
     store_points,
@@ -18,6 +19,38 @@ COLLECTION = "test-collection"
 VECTOR_SIZE = 4
 SAMPLE_VECTOR = [0.1, 0.2, 0.3, 0.4]
 COLLECTION_URL = f"{QDRANT_URL}/collections/{COLLECTION}"
+
+
+# ---------------------------------------------------------------------------
+# sanitize_collection_name
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", ["my-collection", "my_collection", "MyCollection123", "a", "A1-b_C"])
+def test_sanitize_collection_name_accepts_valid_names(name):
+    assert sanitize_collection_name(name) == name
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "../etc/passwd",
+        "col/name",
+        "col name",
+        "col.name",
+        "col@name",
+        "",
+        "col\x00name",
+    ],
+)
+def test_sanitize_collection_name_rejects_invalid_names(name):
+    with pytest.raises(ValueError, match="Invalid collection name"):
+        sanitize_collection_name(name)
+
+
+def test_sanitize_collection_name_rejects_path_traversal():
+    with pytest.raises(ValueError):
+        sanitize_collection_name("../../secrets")
 
 
 # ---------------------------------------------------------------------------
