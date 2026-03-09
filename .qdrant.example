@@ -1,0 +1,11 @@
+# .qdrant — project-level Qdrant configuration
+# Place this file in your project root (or any ancestor directory).
+# The server walks up from cwd to find it, like .gitignore discovery.
+
+collection: my-project-knowledge
+
+# Optional overrides (shown with defaults):
+# qdrant_url: http://localhost:6333
+# ollama_url: http://localhost:11434
+# embedding_model: nomic-embed-text
+# vector_size: 768
