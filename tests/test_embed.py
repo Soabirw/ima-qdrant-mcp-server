@@ -1,10 +1,14 @@
 """Tests for embed.py — embed_texts with mocked httpx transport."""
 
+from unittest.mock import MagicMock, patch
+import numpy as np
+
 import pytest
 import httpx
 from pytest_httpx import HTTPXMock
 
 from qdrant_mcp.embed import embed_texts
+import qdrant_mcp.embed as embed_module
 
 
 OLLAMA_URL = "http://localhost:11434"
@@ -111,3 +115,62 @@ async def test_embed_texts_sends_correct_model(httpx_mock: HTTPXMock, model_name
     body = json.loads(request.content)
     assert body["model"] == model_name
     assert body["input"] == TEXTS
+
+
+# ---------------------------------------------------------------------------
+# fastembed provider tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=False)
+def _reset_fastembed_cache():
+    """Reset the module-level fastembed model cache between tests."""
+    old = embed_module._fastembed_model
+    embed_module._fastembed_model = None
+    yield
+    embed_module._fastembed_model = old
+
+
+def _make_mock_text_embedding(vectors):
+    mock_cls = MagicMock()
+    mock_instance = MagicMock()
+    mock_instance.embed.return_value = [np.array(v) for v in vectors]
+    mock_instance._model_name = "BAAI/bge-small-en-v1.5"
+    mock_cls.return_value = mock_instance
+    return mock_cls, mock_instance
+
+
+async def test_embed_texts_fastembed_success(_reset_fastembed_cache):
+    mock_cls, mock_instance = _make_mock_text_embedding(VECTORS)
+    with patch.dict("sys.modules", {"fastembed": MagicMock(TextEmbedding=mock_cls)}):
+        result = await embed_texts(TEXTS, model="BAAI/bge-small-en-v1.5", provider="fastembed")
+
+    assert len(result) == len(VECTORS)
+    for got, expected in zip(result, VECTORS):
+        assert got == pytest.approx(expected)
+
+
+async def test_embed_texts_fastembed_import_error(_reset_fastembed_cache):
+    with patch.dict("sys.modules", {"fastembed": None}):
+        with pytest.raises(RuntimeError, match="fastembed not installed"):
+            await embed_texts(TEXTS, model="BAAI/bge-small-en-v1.5", provider="fastembed")
+
+
+async def test_embed_texts_fastembed_caches_model(_reset_fastembed_cache):
+    mock_cls, mock_instance = _make_mock_text_embedding(VECTORS)
+    with patch.dict("sys.modules", {"fastembed": MagicMock(TextEmbedding=mock_cls)}):
+        await embed_texts(TEXTS, model="BAAI/bge-small-en-v1.5", provider="fastembed")
+        await embed_texts(TEXTS, model="BAAI/bge-small-en-v1.5", provider="fastembed")
+
+    assert mock_cls.call_count == 1
+
+
+async def test_embed_texts_ollama_is_default(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        method="POST",
+        url=f"{OLLAMA_URL}/api/embed",
+        json={"embeddings": VECTORS},
+    )
+
+    result = await embed_texts(TEXTS, model=MODEL, ollama_url=OLLAMA_URL)
+    assert result == VECTORS

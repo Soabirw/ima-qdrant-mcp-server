@@ -108,6 +108,7 @@ async def test_qdrant_store_embeds_the_information_text():
         ["the text to embed"],
         model=SAMPLE_CONFIG.embedding_model,
         ollama_url=SAMPLE_CONFIG.ollama_url,
+        provider=SAMPLE_CONFIG.embedding_provider,
     )
 
 

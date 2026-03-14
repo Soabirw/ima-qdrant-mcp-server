@@ -5,6 +5,21 @@ All notable changes to ima-qdrant-mcp-server will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-14
+
+### Added
+
+- **fastembed embedding provider** — CPU-only alternative to Ollama for machines with GPU/performance issues
+- **`EMBEDDING_PROVIDER` env var** — switch between `"ollama"` (default) and `"fastembed"`
+- **Provider-aware defaults** — model and vector_size auto-configure per provider (ollama: nomic-embed-text/768d, fastembed: BAAI/bge-small-en-v1.5/384d)
+- **Optional `fastembed` dependency** — install via `pip install qdrant-mcp[fastembed]`
+- **7 new tests** — fastembed config defaults, embed path, import error, model caching (79 total)
+
+### Changed
+
+- `embed_texts()` refactored into provider-dispatched branches (ollama + fastembed)
+- Config `load_config()` uses provider defaults dict instead of hardcoded values
+
 ## [0.1.0] - 2026-03-09
 
 ### Added

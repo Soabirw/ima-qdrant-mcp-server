@@ -11,7 +11,7 @@ def test_load_config_returns_frozen_dataclass():
 
 
 def test_load_config_defaults(monkeypatch):
-    for key in ("QDRANT_URL", "COLLECTION_NAME", "OLLAMA_URL", "EMBEDDING_MODEL", "VECTOR_SIZE", "MAX_SEARCH_LIMIT"):
+    for key in ("QDRANT_URL", "COLLECTION_NAME", "OLLAMA_URL", "EMBEDDING_PROVIDER", "EMBEDDING_MODEL", "VECTOR_SIZE", "MAX_SEARCH_LIMIT"):
         monkeypatch.delenv(key, raising=False)
 
     config = load_config()
@@ -19,6 +19,7 @@ def test_load_config_defaults(monkeypatch):
     assert config.collection == "ima-knowledge"
     assert config.qdrant_url == "http://localhost:6333"
     assert config.ollama_url == "http://localhost:11434"
+    assert config.embedding_provider == "ollama"
     assert config.embedding_model == "nomic-embed-text"
     assert config.vector_size == 768
     assert config.max_search_limit == 100
@@ -65,3 +66,39 @@ def test_resolve_collection_uses_provided_name():
     """_resolve_collection is tested indirectly; verify the config default is stable."""
     config = QdrantConfig(collection="my-collection")
     assert config.collection == "my-collection"
+
+
+def test_load_config_fastembed_defaults(monkeypatch):
+    for key in ("EMBEDDING_MODEL", "VECTOR_SIZE"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("EMBEDDING_PROVIDER", "fastembed")
+
+    config = load_config()
+
+    assert config.embedding_provider == "fastembed"
+    assert config.embedding_model == "BAAI/bge-small-en-v1.5"
+    assert config.vector_size == 384
+
+
+def test_load_config_fastembed_explicit_override(monkeypatch):
+    monkeypatch.setenv("EMBEDDING_PROVIDER", "fastembed")
+    monkeypatch.setenv("VECTOR_SIZE", "768")
+    monkeypatch.setenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
+
+    config = load_config()
+
+    assert config.embedding_provider == "fastembed"
+    assert config.vector_size == 768
+    assert config.embedding_model == "BAAI/bge-base-en-v1.5"
+
+
+def test_load_config_unknown_provider_falls_back_to_ollama_defaults(monkeypatch):
+    for key in ("EMBEDDING_MODEL", "VECTOR_SIZE"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("EMBEDDING_PROVIDER", "unknown")
+
+    config = load_config()
+
+    assert config.embedding_provider == "unknown"
+    assert config.embedding_model == "nomic-embed-text"
+    assert config.vector_size == 768

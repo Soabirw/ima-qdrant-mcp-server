@@ -6,7 +6,7 @@ from .config import load_config
 from .embed import embed_texts
 from .qdrant import ensure_collection, search_points, store_points
 
-mcp = FastMCP("qdrant-mcp", instructions="Qdrant semantic memory with Ollama embeddings")
+mcp = FastMCP("qdrant-mcp", instructions="Qdrant semantic memory with Ollama or fastembed embeddings")
 
 
 def _resolve_collection(collection_name: str | None, config) -> str:
@@ -29,7 +29,7 @@ async def qdrant_store(
     config = load_config()
     collection = _resolve_collection(collection_name, config)
 
-    vectors = await embed_texts([information], model=config.embedding_model, ollama_url=config.ollama_url)
+    vectors = await embed_texts([information], model=config.embedding_model, ollama_url=config.ollama_url, provider=config.embedding_provider)
     vector = vectors[0]
 
     await ensure_collection(config.qdrant_url, collection, config.vector_size)
@@ -62,7 +62,7 @@ async def qdrant_find(
     collection = _resolve_collection(collection_name, config)
     clamped_limit = min(limit, config.max_search_limit)
 
-    vectors = await embed_texts([query], model=config.embedding_model, ollama_url=config.ollama_url)
+    vectors = await embed_texts([query], model=config.embedding_model, ollama_url=config.ollama_url, provider=config.embedding_provider)
     vector = vectors[0]
 
     results = await search_points(config.qdrant_url, collection, vector, limit=clamped_limit)
